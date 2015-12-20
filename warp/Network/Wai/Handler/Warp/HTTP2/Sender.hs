@@ -127,6 +127,8 @@ frameSender ctx@Context{outputQ,controlQ,connectionWindow,encodeDynamicTable}
                     -- the context would be switched to the receiver,
                     -- resulting the inconsistency of concurrency.
                     closed ctx strm Finished
+                    logger <- readIORef $ streamLogger strm
+                    logger
                     flushN total
                 Persist sq -> do
                     (off, needSend) <- sendHeadersIfNecessary total
@@ -234,7 +236,10 @@ frameSender ctx@Context{outputQ,controlQ,connectionWindow,encodeDynamicTable}
         -- "closed" must be before "flushN". If not,
         -- the context would be switched to the receiver,
         -- resulting the inconsistency of concurrency.
-        when (isNothing mnext) $ closed ctx strm Finished
+        when (isNothing mnext) $ do
+            closed ctx strm Finished
+            logger <- readIORef $ streamLogger strm
+            logger
         flushN total
         atomically $ modifyTVar' connectionWindow (subtract datPayloadLen)
         atomically $ modifyTVar' (streamWindow strm) (subtract datPayloadLen)
