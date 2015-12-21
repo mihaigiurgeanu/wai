@@ -9,7 +9,8 @@ module Network.Wai.Handler.Warp.HTTP2.Manager (
   , setAction
   , stop
   , spawnAction
-  , deleteThreadId
+  , addMyId
+  , deleteMyId
   ) where
 
 #if __GLASGOW_HASKELL__ < 709
@@ -29,7 +30,7 @@ import qualified Network.Wai.Handler.Warp.Timeout as T
 
 type Action = T.Manager -> IO ()
 
-data Command = Stop | Spawn | Delete ThreadId
+data Command = Stop | Spawn | Add ThreadId | Delete ThreadId
 
 data Manager = Manager (TQueue Command) (IORef Action)
 
@@ -50,6 +51,8 @@ start set = do
         case x of
             Stop          -> kill tset0 >> T.killManager timmgr
             Spawn         -> next tset0
+            Add    newtid -> let !tset = add newtid tset0
+                             in go q tset ref timmgr
             Delete oldtid -> let !tset = del oldtid tset0
                              in go q tset ref timmgr
       where
@@ -68,8 +71,15 @@ stop (Manager q _) = atomically $ writeTQueue q Stop
 spawnAction :: Manager -> IO ()
 spawnAction (Manager q _) = atomically $ writeTQueue q Spawn
 
-deleteThreadId :: Manager -> ThreadId -> IO ()
-deleteThreadId (Manager q _) tid = atomically $ writeTQueue q $ Delete tid
+addMyId :: Manager -> IO ()
+addMyId (Manager q _) = do
+    tid <- myThreadId
+    atomically $ writeTQueue q $ Add tid
+
+deleteMyId :: Manager -> IO ()
+deleteMyId (Manager q _) = do
+    tid <- myThreadId
+    atomically $ writeTQueue q $ Delete tid
 
 ----------------------------------------------------------------
 
