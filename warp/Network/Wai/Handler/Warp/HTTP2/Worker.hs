@@ -63,14 +63,15 @@ response ii settings Context{outputQ} mgr tconf th strm req rsp
     !isHead = requestMethod req == H.methodHead
     !s0 = responseStatus rsp
     !hs0 = responseHeaders rsp
-    !logger = S.settingsLogger settings req
+    !fmtLog = S.settingsFormatLog settings req
 
     responseNoBody s hs = responseBuilderCore s hs mempty OneshotWithoutBody
 
     responseBuilderBody s hs bdy = responseBuilderCore s hs bdy OneshotWithBody
 
     responseBuilderCore s hs bdy binfo = do
-        let !logact = logger s Nothing
+        !logmsg <- fmtLog s Nothing
+        let !logact = S.settingsWriteLog settings logmsg
         writeIORef (streamLogger strm) logact
         setThreadContinue tconf True
         let rsp' = ResponseBuilder s hs bdy
@@ -91,7 +92,8 @@ response ii settings Context{outputQ} mgr tconf th strm req rsp
     responseFile2XX s hs path mpart
       | isHead    = responseNoBody s hs
       | otherwise = do
-          let !logact = logger s (filePartByteCount <$> mpart)
+          !logmsg <- fmtLog s (filePartByteCount <$> mpart)
+          let !logact = S.settingsWriteLog settings logmsg
           writeIORef (streamLogger strm) logact
           setThreadContinue tconf True
           let rsp' = ResponseFile s hs path mpart
@@ -106,7 +108,8 @@ response ii settings Context{outputQ} mgr tconf th strm req rsp
         body = byteString "File not found"
 
     responseStreaming strmbdy = do
-        let !logact = logger s0 Nothing
+        !logmsg <- fmtLog s0 Nothing
+        let !logact = S.settingsWriteLog settings logmsg
         writeIORef (streamLogger strm) logact
         -- We must not exit this WAI application.
         -- If the application exits, streaming would be also closed.

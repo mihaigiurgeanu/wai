@@ -97,10 +97,8 @@ data Settings = Settings
       -- ^ Whether to enable HTTP2 ALPN/upgrades. Default: True
       --
       -- Since 3.1.7.
-    , settingsLogger :: Request -> H.Status -> Maybe Integer -> IO ()
-      -- ^ A log function. Default: no action.
-      --
-      -- Since 3.X.X.
+    , settingsFormatLog :: Request -> H.Status -> Maybe Integer -> IO ByteString
+    , settingsWriteLog :: ByteString -> IO ()
     }
 
 -- | Specify usage of the PROXY protocol.
@@ -134,7 +132,8 @@ defaultSettings = Settings
     , settingsProxyProtocol = ProxyProtocolNone
     , settingsSlowlorisSize = 2048
     , settingsHTTP2Enabled = True
-    , settingsLogger = \_ _ _ -> return ()
+    , settingsFormatLog = \_ _ _ -> return S8.empty
+    , settingsWriteLog = \_ -> return ()
     }
 
 -- | Apply the logic provided by 'defaultOnException' to determine if an

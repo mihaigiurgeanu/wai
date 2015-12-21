@@ -158,7 +158,7 @@ sendResponse settings conn ii req reqidxhdr src response = do
         return isPersist
   where
     defServer = settingsServerName settings
-    logger = settingsLogger settings
+    logger = \rq st mlen -> settingsFormatLog settings rq st mlen >>= settingsWriteLog settings
     ver = httpVersion req
     s = responseStatus response
     hs0 = sanitizeHeaders $ responseHeaders response

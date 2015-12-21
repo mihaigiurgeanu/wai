@@ -69,7 +69,8 @@ module Network.Wai.Handler.Warp (
   , setProxyProtocolOptional
   , setSlowlorisSize
   , setHTTP2Disabled
-  , setLogger
+  , setFormatLog
+  , setWriteLog
     -- ** Getters
   , getPort
   , getHost
@@ -334,9 +335,13 @@ setHTTP2Disabled y = y { settingsHTTP2Enabled = False }
 -- | Setting a log function.
 --
 -- Since 3.X.X
-setLogger :: (Request -> H.Status -> Maybe Integer -> IO ())
-          -> Settings -> Settings
-setLogger lgr y = y { settingsLogger = lgr }
+setFormatLog :: (Request -> H.Status -> Maybe Integer -> IO ByteString)
+            -> Settings -> Settings
+setFormatLog fmt y = y { settingsFormatLog = fmt }
+
+setWriteLog :: (ByteString -> IO ())
+            -> Settings -> Settings
+setWriteLog msg y = y { settingsWriteLog = msg }
 
 -- | Explicitly pause the slowloris timeout.
 --
